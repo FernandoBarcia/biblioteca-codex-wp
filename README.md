@@ -20,14 +20,14 @@ Los libros son **privados**: no tienen página pública ni aparecen en las búsq
 
 ## Instalación
 
-1. Descarga el ZIP del plugin.
+1. Descarga [el ZIP del plugin](https://github.com/FernandoBarcia/biblioteca-codex-wp/releases/latest/download/biblioteca-codex.zip).
 2. En WordPress, ve a Plugins → Añadir nuevo → Subir plugin, elige el ZIP y actívalo.
 3. Aparece el menú **Biblioteca** en el escritorio.
 
 ## Conectar la app
 
 1. En WordPress, abre tu perfil (Usuarios → Perfil) y, en «Contraseñas de aplicación», crea una llamada «Biblioteca Codex». Cópiala: solo se muestra una vez.
-2. En la app, abre Ajustes → Conexión con WordPress.
+2. En la app, abre Ajustes → Avanzado → Conexión con WordPress.
 3. Escribe la dirección de tu web (con `https://`), tu usuario de WordPress y esa contraseña.
 
 En Biblioteca → Ajustes tienes la dirección exacta que hay que escribir y un aviso si falta HTTPS o las contraseñas de aplicación están desactivadas.
