@@ -247,6 +247,7 @@ add_action( 'rest_api_init', function () {
 			'unread'            => count( array_filter( $books, fn( $id ) => 'unread' === bcodex_meta( $id, 'status' ) ) ),
 			'wishes'            => count( $all ) - count( $books ),
 			'goal'              => $goal ? array( 'target' => $goal, 'done' => $done, 'scope' => $scope ) : null,
+			'goals'             => (object) bcodex_goal_history( (int) $year, $goal, $scope ),
 			'masterpieces'      => count( array_filter( $books, 'bcodex_is_masterpiece' ) ),
 			// No pictures travel from here: the app shows its own.
 			'masterpiece_image' => '',
@@ -256,6 +257,12 @@ add_action( 'rest_api_init', function () {
 		);
 	} ) );
 
+	// What the settings page does, for whoever may open it.
+	register_rest_route( $ns, '/goal', array( 'methods' => 'POST', 'permission_callback' => fn() => current_user_can( 'manage_options' ), 'args' => array(
+		'target' => array( 'type' => 'integer', 'required' => true, 'minimum' => 0, 'maximum' => 500 ),
+		'scope'  => array( 'type' => 'string', 'enum' => array( 'all', 'book', 'manga' ) ),
+	), 'callback' => fn( WP_REST_Request $r ) => bcodex_set_goal( (int) $r['target'], $r['scope'] ? (string) $r['scope'] : null ) ) );
+
 	register_rest_route( $ns, '/options', array( 'methods' => 'GET', 'permission_callback' => $can_read, 'callback' => function () {
 		$verdicts = array();
 		foreach ( bcodex_verdicts() as $value => $v ) { $verdicts[] = array( 'value' => (float) $value, 'label' => $v[0], 'phrase' => $v[1], 'image' => '' ); }
@@ -263,8 +270,8 @@ add_action( 'rest_api_init', function () {
 		foreach ( bcodex_marks() as $slug => $m ) { $marks[] = array( 'slug' => $slug, 'label' => $m[0], 'description' => $m[1] ); }
 		$pairs = fn( $list ) => array_map( fn( $k, $v ) => array( 'value' => $k, 'label' => $v ), array_keys( $list ), $list );
 		$sagas = bcodex_sagas();
-		// form_version tells the app what the API can do: 2 adds the search by title; 3, /profile; 4, the state «wish» (the desiderata).
-		// The designs of a series (tome_layouts) and the ornaments (version 5) belong to the full plugin and are left out.
-		return array( 'form_version' => 4, 'plugin' => 'biblioteca-codex', 'states' => $pairs( bcodex_states() ), 'formats' => $pairs( bcodex_formats() ), 'verdicts' => $verdicts, 'marks' => $marks, 'series' => array_column( $sagas, 'name' ), 'sagas' => $sagas, 'authors' => bcodex_author_names(), 'library' => '' );
+		// form_version tells the app what the API can do: 2 adds the search by title; 3, /profile; 4, the state «wish» (the desiderata); 6, POST /goal and `goals` in /profile.
+		// The designs of a series (tome_layouts) and the ornaments (version 5) belong to the full plugin and are left out: the app does without them.
+		return array( 'form_version' => 6, 'plugin' => 'biblioteca-codex', 'states' => $pairs( bcodex_states() ), 'formats' => $pairs( bcodex_formats() ), 'verdicts' => $verdicts, 'marks' => $marks, 'series' => array_column( $sagas, 'name' ), 'sagas' => $sagas, 'authors' => bcodex_author_names(), 'library' => '' );
 	} ) );
 } );
