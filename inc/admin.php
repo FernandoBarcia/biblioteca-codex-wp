@@ -167,11 +167,11 @@ function bcodex_settings_page() {
 	if ( isset( $_POST['bcodex_settings_save'] ) ) {
 		check_admin_referer( 'bcodex_settings' );
 		$scope = isset( $_POST['bcodex_goal_scope'] ) ? sanitize_key( wp_unslash( $_POST['bcodex_goal_scope'] ) ) : 'all';
-		update_option( 'bcodex_settings', array(
-			'goal'       => isset( $_POST['bcodex_goal'] ) ? min( 500, absint( wp_unslash( $_POST['bcodex_goal'] ) ) ) : 0,
-			'goal_scope' => in_array( $scope, array( 'all', 'book', 'manga' ), true ) ? $scope : 'all',
-			'google_key' => isset( $_POST['bcodex_google_key'] ) ? sanitize_text_field( wp_unslash( $_POST['bcodex_google_key'] ) ) : '',
-		), false );
+		$settings = get_option( 'bcodex_settings', array() );
+		$settings = is_array( $settings ) ? $settings : array();
+		$settings['google_key'] = isset( $_POST['bcodex_google_key'] ) ? sanitize_text_field( wp_unslash( $_POST['bcodex_google_key'] ) ) : '';
+		update_option( 'bcodex_settings', $settings, false );
+		bcodex_set_goal( isset( $_POST['bcodex_goal'] ) ? absint( wp_unslash( $_POST['bcodex_goal'] ) ) : 0, in_array( $scope, array( 'all', 'book', 'manga' ), true ) ? $scope : 'all' );
 		$notice = 'Ajustes guardados.';
 	}
 	if ( isset( $_POST['bcodex_samples_add'] ) ) {

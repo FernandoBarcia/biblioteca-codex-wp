@@ -6,7 +6,7 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 function bcodex_states() {
-	return array( 'read' => 'Leído', 'reading' => 'Leyendo', 'unread' => 'Pendiente', 'paused' => 'En pausa', 'wish' => 'En desiderata', 'unknown' => 'Sin clasificar' );
+	return array( 'read' => 'Leído', 'reading' => 'Leyendo', 'unread' => 'Por leer', 'paused' => 'En pausa', 'wish' => 'En desiderata', 'unknown' => 'Sin clasificar' );
 }
 function bcodex_formats() { return array( 'book' => 'Libro', 'manga' => 'Manga' ); }
 function bcodex_meta( $id, $key ) { return get_post_meta( $id, '_fb_book_' . $key, true ); }
@@ -15,6 +15,44 @@ function bcodex_meta( $id, $key ) { return get_post_meta( $id, '_fb_book_' . $ke
 function bcodex_setting( $key, $default = '' ) {
 	$settings = get_option( 'bcodex_settings', array() );
 	return is_array( $settings ) && array_key_exists( $key, $settings ) ? $settings[ $key ] : $default;
+}
+
+/**
+ * The yearly goals on record, newest first: array( year => array( 'goal' => int, 'scope' => string ) ). The settings hold one
+ * goal, which carries over each January, so noting it under its year keeps what was aimed for once the year is over.
+ */
+function bcodex_goal_history( $year, $goal, $scope ) {
+	$history = get_option( 'bcodex_goal_history', array() );
+	if ( ! is_array( $history ) ) { $history = array(); }
+	$entry = $goal ? array( 'goal' => (int) $goal, 'scope' => (string) $scope ) : null;
+	if ( ( $history[ $year ] ?? null ) !== $entry ) {
+		if ( $entry ) { $history[ $year ] = $entry; } else { unset( $history[ $year ] ); }
+		krsort( $history );
+		update_option( 'bcodex_goal_history', $history, false );
+	}
+	return $history;
+}
+
+/** Sets the goal, from the settings or the app. The one it replaces stands for last year, if that year has none on record. */
+function bcodex_set_goal( $target, $scope = null ) {
+	$settings = get_option( 'bcodex_settings', array() );
+	if ( ! is_array( $settings ) ) { $settings = array(); }
+	$old = absint( $settings['goal'] ?? 0 );
+	$old_scope = (string) ( $settings['goal_scope'] ?? 'all' );
+	$year = (int) wp_date( 'Y' );
+	$history = get_option( 'bcodex_goal_history', array() );
+	if ( ! is_array( $history ) ) { $history = array(); }
+	if ( $old && ! isset( $history[ $year - 1 ] ) ) {
+		$history[ $year - 1 ] = array( 'goal' => $old, 'scope' => $old_scope );
+		krsort( $history );
+		update_option( 'bcodex_goal_history', $history, false );
+	}
+	$settings['goal'] = max( 0, min( 500, (int) $target ) );
+	if ( null !== $scope ) { $settings['goal_scope'] = $scope; }
+	update_option( 'bcodex_settings', $settings, false );
+	$scope = (string) ( $settings['goal_scope'] ?? 'all' );
+	bcodex_goal_history( $year, $settings['goal'], $scope );
+	return array( 'goal' => $settings['goal'], 'scope' => $scope );
 }
 
 /**

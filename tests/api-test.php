@@ -40,7 +40,7 @@ $check( 'sin sesión no se crea', 401 === $call( 'POST', '/books', array( 'title
 // The lists the app's forms show.
 $as( 'autora' );
 list( $status, $options ) = $call( 'GET', '/options' );
-$check( 'opciones', 200 === $status && 4 === $options['form_version'] && 6 === count( $options['states'] ) && 11 === count( $options['verdicts'] ) && 13 === count( $options['marks'] ) && ! isset( $options['tome_layouts'] ) );
+$check( 'opciones', 200 === $status && 6 === $options['form_version'] && 6 === count( $options['states'] ) && 'Por leer' === array_column( $options['states'], 'label', 'value' )['unread'] && 11 === count( $options['verdicts'] ) && 13 === count( $options['marks'] ) && ! isset( $options['tome_layouts'] ) );
 $check( 'los veredictos van sin imagen: la app pone las suyas', array( '' ) === array_values( array_unique( array_column( $options['verdicts'], 'image' ) ) ) && 'Obra maestra' === $options['verdicts'][0]['label'] && 5.5 === $options['verdicts'][0]['value'] );
 
 // A new book, with the defaults of the app.
@@ -117,6 +117,33 @@ $check( 'libros de ejemplo', 12 === bcodex_add_sample_books( $user ) && 0 === bc
 $as( 'otro' );
 $samples = $call( 'GET', '/books' )[1];
 $check( 'con su portada', 13 === count( $samples ) && 12 === count( array_filter( $samples, fn( $b ) => str_starts_with( $b['cover'], 'https://covers.openlibrary.org/b/isbn/' ) ) ) );
+
+// The goal, from the app.
+$year = (int) wp_date( 'Y' );
+delete_option( 'bcodex_goal_history' );
+update_option( 'bcodex_settings', array( 'goal' => 12, 'goal_scope' => 'all', 'google_key' => 'clave' ) );
+$as( 'autora' );
+$check( 'solo quien abre los ajustes cambia el objetivo', 403 === $call( 'POST', '/goal', array( 'target' => 30 ) )[0] );
+$check( 'el perfil anota el objetivo del año', array( 'goal' => 12, 'scope' => 'all' ) === ( (array) $call( 'GET', '/profile' )[1]['goals'] )[ $year ] );
+$as( 'admin' );
+delete_option( 'bcodex_goal_history' );
+list( $status, $saved ) = $call( 'POST', '/goal', array( 'target' => 24, 'scope' => 'book' ) );
+$check( 'objetivo nuevo', 200 === $status && array( 'goal' => 24, 'scope' => 'book' ) === $saved );
+$check( 'los demás ajustes siguen', 'clave' === bcodex_setting( 'google_key' ) && 24 === bcodex_setting( 'goal' ) );
+$goals = (array) $call( 'GET', '/profile' )[1]['goals'];
+$check( 'el que tenía queda para el año pasado', array( 'goal' => 12, 'scope' => 'all' ) === $goals[ $year - 1 ] && array( 'goal' => 24, 'scope' => 'book' ) === $goals[ $year ] );
+$check( 'el año más reciente va primero', array( $year, $year - 1 ) === array_keys( $goals ) );
+$call( 'POST', '/goal', array( 'target' => 30 ) );
+$goals = (array) $call( 'GET', '/profile' )[1]['goals'];
+$check( 'sin alcance se queda el que había, y el año pasado no cambia', array( 'goal' => 30, 'scope' => 'book' ) === $goals[ $year ] && 12 === $goals[ $year - 1 ]['goal'] );
+$check( 'objetivo fuera de rango', 400 === $call( 'POST', '/goal', array( 'target' => 501 ) )[0] && 400 === $call( 'POST', '/goal', array( 'target' => 5, 'scope' => 'otro' ) )[0] );
+$call( 'POST', '/goal', array( 'target' => 0 ) );
+$profile = $call( 'GET', '/profile' )[1];
+$goals = (array) $profile['goals'];
+$check( 'sin objetivo, el año en curso sale del historial', null === $profile['goal'] && ! isset( $goals[ $year ] ) && isset( $goals[ $year - 1 ] ) );
+delete_option( 'bcodex_goal_history' );
+delete_option( 'bcodex_settings' );
+$check( 'sin nada guardado, el historial viaja vacío', '{}' === wp_json_encode( $call( 'GET', '/profile' )[1]['goals'] ) );
 
 // The books have no public page.
 $check( 'los libros no son públicos', ! is_post_type_viewable( 'fb_book' ) && ! get_post_type_object( 'fb_book' )->show_in_rest );

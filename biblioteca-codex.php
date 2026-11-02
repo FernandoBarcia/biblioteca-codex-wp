@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Biblioteca Codex
  * Description: Guarda tu biblioteca de lecturas en WordPress y la conecta con la app Biblioteca Codex para iPhone y iPad. Los libros son privados: solo se ven en el escritorio y en la app.
- * Version: 1.0.1
+ * Version: 1.1.0
  * Requires at least: 6.4
  * Requires PHP: 8.0
  * Author: Fernando Barcia
@@ -13,7 +13,7 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 define( 'BCODEX_FILE', __FILE__ );
 define( 'BCODEX_DIR', plugin_dir_path( __FILE__ ) );
-define( 'BCODEX_VERSION', '1.0.1' );
+define( 'BCODEX_VERSION', '1.1.0' );
 
 // The full «Biblioteca» plugin keeps the same books and answers the same API. Beside it this one stays idle,
 // so the two never register the library twice.

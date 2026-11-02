@@ -52,7 +52,7 @@ En una web de una sola persona esto no se nota: cada uno tiene su biblioteca.
 
 En Biblioteca → Ajustes:
 
-- **Objetivo de lecturas del año**, que la app muestra en el perfil. Cuentan los libros leídos y las series de manga completas; los tomos sueltos no suman.
+- **Objetivo de lecturas del año**, que la app muestra en el perfil y que también se puede cambiar desde ella, con un usuario administrador. Cuentan los libros leídos y las series de manga completas; los tomos sueltos no suman. El plugin guarda el objetivo de cada año, y con él la app recuerda en la Vitrina los años que lo cumpliste.
 - **Clave de Google Books**, opcional. Sin ella los libros se buscan solo en Open Library.
 - **Libros de ejemplo**: añade trece libros y mangas a un usuario, para probar la app.
 
