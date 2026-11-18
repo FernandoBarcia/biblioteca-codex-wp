@@ -10,6 +10,7 @@ La app funciona sin este plugin, guardando los libros en el dispositivo. Con él
 - Ofrece la API que usa la app (`/wp-json/fb-books/v1/`).
 - Busca los datos de un libro por ISBN o por título en Open Library y, si pones una clave propia, en Google Books.
 - Guarda las portadas en Medios, convertidas a WebP cuando el servidor lo permite.
+- Guarda la cartera de la app: lo comprado con rupias en el Bazar, la sala de la Vitrina y los favoritos, para que se vean igual en el iPhone y en el iPad. Cada usuario tiene la suya.
 
 Los libros son **privados**: no tienen página pública ni aparecen en las búsquedas de la web. Solo se ven en el escritorio y en la app.
 
@@ -67,6 +68,8 @@ El plugin no envía nada a su autor ni usa servicios de análisis. Solo se conec
 ## Relación con el plugin Biblioteca
 
 Este plugin usa los mismos nombres internos que el plugin completo «Biblioteca» (el contenido `fb_book`, sus campos y la API `fb-books/v1`), que además dibuja la biblioteca en la web. Una biblioteca pasa de uno a otro sin cambios. Si los dos están activos, Biblioteca Codex se queda quieto y avisa.
+
+La cartera de la app se guarda en el perfil de cada usuario aquí y en una sola cartera para toda la web en el plugin completo: no pasa de uno a otro.
 
 Lo que este plugin no incluye: las imágenes de los veredictos, la página pública de la biblioteca, los sellos, los adornos, la galería de obras maestras y el resumen del año.
 

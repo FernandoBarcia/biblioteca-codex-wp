@@ -270,8 +270,25 @@ add_action( 'rest_api_init', function () {
 		foreach ( bcodex_marks() as $slug => $m ) { $marks[] = array( 'slug' => $slug, 'label' => $m[0], 'description' => $m[1] ); }
 		$pairs = fn( $list ) => array_map( fn( $k, $v ) => array( 'value' => $k, 'label' => $v ), array_keys( $list ), $list );
 		$sagas = bcodex_sagas();
-		// form_version tells the app what the API can do: 2 adds the search by title; 3, /profile; 4, the state «wish» (the desiderata); 6, POST /goal and `goals` in /profile.
+		// form_version tells the app what the API can do: 2 adds the search by title; 3, /profile; 4, the state «wish» (the desiderata); 6, POST /goal and `goals` in /profile;
+		// 7, /wallet and POST /wallet/purchase; 8, the room in /wallet and POST /wallet/room.
 		// The designs of a series (tome_layouts) and the ornaments (version 5) belong to the full plugin and are left out: the app does without them.
-		return array( 'form_version' => 6, 'plugin' => 'biblioteca-codex', 'states' => $pairs( bcodex_states() ), 'formats' => $pairs( bcodex_formats() ), 'verdicts' => $verdicts, 'marks' => $marks, 'series' => array_column( $sagas, 'name' ), 'sagas' => $sagas, 'authors' => bcodex_author_names(), 'library' => '' );
+		return array( 'form_version' => 8, 'plugin' => 'biblioteca-codex', 'states' => $pairs( bcodex_states() ), 'formats' => $pairs( bcodex_formats() ), 'verdicts' => $verdicts, 'marks' => $marks, 'series' => array_column( $sagas, 'name' ), 'sagas' => $sagas, 'authors' => bcodex_author_names(), 'library' => '' );
 	} ) );
+
+	// The wallet of the app, each user's own: the purchases of its bazaar and the room of its Showcase (inc/wallet.php).
+	register_rest_route( $ns, '/wallet', array( 'methods' => 'GET', 'permission_callback' => $can_read, 'callback' => fn() => bcodex_wallet( get_current_user_id() ) ) );
+	register_rest_route( $ns, '/wallet/purchase', array( 'methods' => 'POST', 'permission_callback' => $can_read, 'args' => array(
+		'id'     => array( 'type' => 'string', 'required' => true, 'pattern' => '^[0-9A-Fa-f-]{36}$' ),
+		'item'   => array( 'type' => 'string', 'required' => true, 'pattern' => '^[a-z0-9-]{1,64}$' ),
+		'amount' => array( 'type' => 'integer', 'required' => true, 'minimum' => 1, 'maximum' => 1000000 ),
+		'reason' => array( 'type' => 'string', 'required' => true, 'maxLength' => 200 ),
+		'date'   => array( 'type' => 'string', 'required' => true, 'format' => 'date-time' ),
+	), 'callback' => fn( WP_REST_Request $r ) => bcodex_wallet_buy( get_current_user_id(), strtolower( (string) $r['id'] ), (string) $r['item'], (int) $r['amount'], sanitize_text_field( (string) $r['reason'] ), (string) $r['date'] ) ) );
+	register_rest_route( $ns, '/wallet/room', array( 'methods' => 'POST', 'permission_callback' => $can_read, 'args' => array(
+		'slots'     => array( 'type' => 'object', 'required' => true ),
+		'hidden'    => array( 'type' => 'array', 'required' => true, 'items' => array( 'type' => 'string' ) ),
+		'favorites' => array( 'type' => 'array', 'required' => true, 'items' => array( 'type' => 'string' ) ),
+		'updated'   => array( 'type' => 'string', 'required' => true, 'format' => 'date-time' ),
+	), 'callback' => fn( WP_REST_Request $r ) => bcodex_wallet_set_room( get_current_user_id(), array( 'slots' => (array) $r['slots'], 'hidden' => (array) $r['hidden'], 'favorites' => (array) $r['favorites'], 'updated' => (string) $r['updated'] ) ) ) );
 } );
