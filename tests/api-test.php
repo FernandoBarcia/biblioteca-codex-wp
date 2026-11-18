@@ -40,7 +40,7 @@ $check( 'sin sesión no se crea', 401 === $call( 'POST', '/books', array( 'title
 // The lists the app's forms show.
 $as( 'autora' );
 list( $status, $options ) = $call( 'GET', '/options' );
-$check( 'opciones', 200 === $status && 6 === $options['form_version'] && 6 === count( $options['states'] ) && 'Por leer' === array_column( $options['states'], 'label', 'value' )['unread'] && 11 === count( $options['verdicts'] ) && 13 === count( $options['marks'] ) && ! isset( $options['tome_layouts'] ) );
+$check( 'opciones', 200 === $status && 8 === $options['form_version'] && 6 === count( $options['states'] ) && 'Por leer' === array_column( $options['states'], 'label', 'value' )['unread'] && 11 === count( $options['verdicts'] ) && 13 === count( $options['marks'] ) && ! isset( $options['tome_layouts'] ) );
 $check( 'los veredictos van sin imagen: la app pone las suyas', array( '' ) === array_values( array_unique( array_column( $options['verdicts'], 'image' ) ) ) && 'Obra maestra' === $options['verdicts'][0]['label'] && 5.5 === $options['verdicts'][0]['value'] );
 
 // A new book, with the defaults of the app.
@@ -144,6 +144,29 @@ $check( 'sin objetivo, el año en curso sale del historial', null === $profile['
 delete_option( 'bcodex_goal_history' );
 delete_option( 'bcodex_settings' );
 $check( 'sin nada guardado, el historial viaja vacío', '{}' === wp_json_encode( $call( 'GET', '/profile' )[1]['goals'] ) );
+
+// The wallet of the app: each user's own.
+foreach ( array( 'autora', 'otro' ) as $login ) { delete_user_meta( get_user_by( 'login', $login )->ID, 'bcodex_wallet' ); }
+$as( '' );
+$check( 'sin sesión no hay cartera', 401 === $call( 'GET', '/wallet' )[0] && 401 === $call( 'POST', '/wallet/room', array( 'slots' => array(), 'hidden' => array(), 'favorites' => array(), 'updated' => '2026-11-18T12:00:00Z' ) )[0] );
+$as( 'autora' );
+$check( 'cartera vacía', '{"purchases":[],"room":{"slots":{},"hidden":[],"favorites":[],"updated":""}}' === wp_json_encode( $call( 'GET', '/wallet' )[1] ) );
+$buy = array( 'id' => '11111111-2222-3333-4444-555555555555', 'item' => 'peana-marmol', 'amount' => 40, 'reason' => 'Bazar: Peana', 'date' => '2026-11-18T10:00:00Z' );
+$call( 'POST', '/wallet/purchase', $buy );
+$wallet = $call( 'POST', '/wallet/purchase', array( 'id' => '99999999-2222-3333-4444-555555555555' ) + $buy )[1];
+$check( 'una compra se guarda una vez', array( 'peana-marmol' ) === array_column( $wallet['purchases'], 'item' ) );
+$check( 'compra no válida', 400 === $call( 'POST', '/wallet/purchase', array( 'item' => 'Peana Mármol' ) + $buy )[0] );
+$room = array( 'slots' => array( 'wall' => 'atrio-escalera', 'cabinet' => 'ninguno', 'Mal' => 'x' ), 'hidden' => array( 'farol', 'farol' ), 'favorites' => array( 'viridia-sol', 'No Vale' ), 'updated' => '2026-11-18T12:00:00Z' );
+$wallet = $call( 'POST', '/wallet/room', $room )[1];
+$check( 'sala guardada y limpia', array( 'wall' => 'atrio-escalera', 'cabinet' => 'ninguno' ) === (array) $wallet['room']['slots'] && array( 'farol' ) === $wallet['room']['hidden'] && array( 'viridia-sol' ) === $wallet['room']['favorites'] );
+$wallet = $call( 'POST', '/wallet/room', array( 'slots' => array(), 'updated' => '2026-11-18T11:00:00Z' ) + $room )[1];
+$check( 'gana la sala más reciente', 'atrio-escalera' === ( (array) $wallet['room']['slots'] )['wall'] );
+$call( 'POST', '/wallet/purchase', array( 'id' => '22222222-2222-3333-4444-555555555555', 'item' => 'farol' ) + $buy );
+$wallet = $call( 'GET', '/wallet' )[1];
+$check( 'comprar no borra la sala', 2 === count( $wallet['purchases'] ) && '2026-11-18T12:00:00Z' === $wallet['room']['updated'] );
+$as( 'otro' );
+$check( 'cada usuario tiene su cartera', '{"purchases":[],"room":{"slots":{},"hidden":[],"favorites":[],"updated":""}}' === wp_json_encode( $call( 'GET', '/wallet' )[1] ) );
+foreach ( array( 'autora', 'otro' ) as $login ) { delete_user_meta( get_user_by( 'login', $login )->ID, 'bcodex_wallet' ); }
 
 // The books have no public page.
 $check( 'los libros no son públicos', ! is_post_type_viewable( 'fb_book' ) && ! get_post_type_object( 'fb_book' )->show_in_rest );
